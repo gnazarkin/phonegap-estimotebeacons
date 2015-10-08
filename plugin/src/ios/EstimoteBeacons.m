@@ -1,7 +1,4 @@
-#import <Cordova/CDV.h>
 #import "EstimoteBeacons.h"
-#import "ESTNearableDefinitions.h"
-#import "ESTConfig.h"
 
 #pragma mark - Estimote Triggers Declarations
 
