@@ -1,11 +1,11 @@
 #import <Cordova/CDV.h>
-#import "ESTBeaconManager.h"
-#import "ESTNearableManager.h"
-#import "ESTTriggerManager.h"
+#import <CoreBluetooth/CoreBluetooth.h>
+
+#import <EstimoteSDK/EstimoteSDK.h>
 
 @interface EstimoteBeacons : CDVPlugin
 
-- (EstimoteBeacons*) pluginInitialize;
+- (EstimoteBeacons *)pluginInitialize;
 - (void) onReset;
 
 @end
