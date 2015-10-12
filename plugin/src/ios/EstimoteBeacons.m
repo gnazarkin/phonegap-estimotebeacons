@@ -288,39 +288,13 @@
 	// Properties always available.
 	[dict setValue:beacon.major forKey:@"major"];
 	[dict setValue:beacon.minor forKey:@"minor"];
-	[dict setValue:[NSNumber numberWithInteger:beacon.color] forKey:@"color"];
 	[dict setValue:[NSNumber numberWithInteger:beacon.rssi] forKey:@"rssi"];
-	[dict setValue:[NSNumber numberWithInteger:beacon.connectionStatus] forKey:@"connectionStatus"];
 
 	// Properties available after CoreLocation based scan.
 	[dict setValue:beacon.proximityUUID.UUIDString forKey:@"proximityUUID"]; // TODO: Check nil value?
-	[dict setValue:beacon.distance forKey:@"distance"];
+  [dict setValue:[NSNumber numberWithDouble:beacon.accuracy] forKey:@"accuracy"];
 	[dict setValue:[NSNumber numberWithInt:beacon.proximity] forKey:@"proximity"];
 
-	// Properties available after CoreBluetooth based scan.
-	[dict setValue:beacon.macAddress forKey:@"macAddress"];
-	[dict setValue:beacon.measuredPower forKey:@"measuredPower"];
-	[dict setValue:[NSNumber numberWithInt:beacon.firmwareState] forKey:@"firmwareState"];
-
-	// Properties available after connecting.
-	if (ESTConnectionStatusConnected == beacon.connectionStatus) {
-		[dict setValue:beacon.name forKey:@"name"];
-		[dict setValue:beacon.motionProximityUUID.UUIDString forKey:@"name"]; // TODO: Check nil value?
-		[dict setValue:[NSNumber numberWithChar:[beacon.power charValue]] forKey:@"power"];
-		[dict setValue:beacon.advInterval forKey:@"advInterval"];
-		[dict setValue:beacon.batteryLevel forKey:@"batteryLevel"];
-		[dict setValue:beacon.remainingLifetime forKey:@"remainingLifetime"];
-		[dict setValue:[NSNumber numberWithInt:beacon.batteryType] forKey:@"batteryType"];
-		[dict setValue:beacon.hardwareVersion forKey:@"hardwareVersion"];
-		[dict setValue:beacon.firmwareVersion forKey:@"firmwareVersion"];
-		[dict setValue:[NSNumber numberWithInt:beacon.firmwareUpdateInfo] forKey:@"firmwareUpdateInfo"];
-		[dict setValue:[NSNumber numberWithBool:beacon.isMoving] forKey:@"isMoving"];
-		[dict setValue:[NSNumber numberWithBool:beacon.isAccelerometerAvailable] forKey:@"isAccelerometerAvailable"];
-		[dict setValue:[NSNumber numberWithBool:beacon.isAccelerometerEditAvailable] forKey:@"isAccelerometerEditAvailable"];
-		[dict setValue:[NSNumber numberWithBool:beacon.accelerometerEnabled] forKey:@"accelerometerEnabled"];
-		[dict setValue:[NSNumber numberWithInt:beacon.basicPowerMode] forKey:@"basicPowerMode"];
-		[dict setValue:[NSNumber numberWithInt:beacon.smartPowerMode] forKey:@"smartPowerMode"];
-	}
 
 	return dict;
 }
