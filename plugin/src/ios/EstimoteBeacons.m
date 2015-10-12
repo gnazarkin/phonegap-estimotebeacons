@@ -200,36 +200,34 @@
  */
 - (CLBeaconRegion *)createRegionFromDictionary:(NSDictionary*)regionDict {
 	// Default values for the region object.
-	NSUUID* uuid = ESTIMOTE_PROXIMITY_UUID;
+	NSUUID* uuid;
 	NSString* identifier = @"EstimoteSampleRegion";
 	CLBeaconMajorValue major = 0;
 	CLBeaconMinorValue minor = 0;
-	BOOL secure = false;
 	BOOL majorIsDefined = NO;
 	BOOL minorIsDefined = NO;
-	BOOL secureIsDefined = NO;
   CLBeaconRegion *beaconRegion = [CLBeaconRegion alloc];
 
 	// Get region values.
 	for (id key in regionDict) {
 		NSString* value = regionDict[key];
+
 		if ([key isEqualToString:@"uuid"]) {
-			uuid = [[NSUUID alloc] initWithUUIDString: value]; }
-		else
-		if ([key isEqualToString:@"identifier"]) {
-			identifier = value; }
-		else
-		if ([key isEqualToString:@"major"]) {
+			uuid = [[NSUUID alloc] initWithUUIDString: value];
+    } else if ([key isEqualToString:@"identifier"]) {
+			identifier = value;
+    } else if ([key isEqualToString:@"major"]) {
 			major = [value integerValue];
-			majorIsDefined = YES; }
-		else
-		if ([key isEqualToString:@"minor"]) {
+			majorIsDefined = YES;
+    } else if ([key isEqualToString:@"minor"]) {
 			minor = [value integerValue];
-			minorIsDefined = YES; }
-		else
-		if ([key isEqualToString:@"secure"]) {
-			secure = [value boolValue];
-			secureIsDefined = YES; } }
+			minorIsDefined = YES;
+    }
+  }
+
+  if (uuid == (id)[NSNull null]) {
+    uuid = ESTIMOTE_PROXIMITY_UUID;
+  }
 
 	// Create a beacon region object.
 	if (majorIsDefined && minorIsDefined) {
