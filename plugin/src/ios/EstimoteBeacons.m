@@ -57,7 +57,7 @@
 
 @interface EstimoteBeacons ()
 <	ESTBeaconManagerDelegate,
-	ESTBeaconDelegate,
+	ESTBeaconConnectionDelegate,
 	ESTNearableManagerDelegate,
 	ESTTriggerManagerDelegate,
 	CBCentralManagerDelegate >
@@ -66,11 +66,6 @@
  * The beacon manager in the Estimote API.
  */
 @property (nonatomic, strong) ESTBeaconManager* beaconManager;
-
-/**
- * Callback id for startEstimoteBeaconsDiscoveryForRegion.
- */
-@property NSString* callbackId_beaconsDiscovery;
 
 /**
  * Dictionary of callback ids for startRangingBeaconsInRegion.
@@ -184,7 +179,6 @@
 	self.beaconManager.avoidUnknownStateBeacons = YES;
 
 	// Variables that track callback ids.
-	self.callbackId_beaconsDiscovery = nil;
 	self.callbackIds_beaconsRanging = [NSMutableDictionary new];
 	self.callbackIds_beaconsMonitoring = [NSMutableDictionary new];
 }
@@ -192,12 +186,8 @@
 - (void) beacons_onReset
 {
 	// Reset callback variables.
-	self.callbackId_beaconsDiscovery = nil;
 	self.callbackIds_beaconsRanging = [NSMutableDictionary new];
 	self.callbackIds_beaconsMonitoring = [NSMutableDictionary new];
-
-	// Stop any ongoing scanning.
-	[self.beaconManager stopEstimoteBeaconDiscovery];
 
 	// TODO: Stop any ongoing ranging or monitoring.
 }
@@ -208,7 +198,7 @@
  * Create a region object from a dictionary.
  * Don't worry, the curly placement is just a joke ;-)
  */
-- (ESTBeaconRegion*) createRegionFromDictionary:(NSDictionary*)regionDict {
+- (CLBeaconRegion *)createRegionFromDictionary:(NSDictionary*)regionDict {
 	// Default values for the region object.
 	NSUUID* uuid = ESTIMOTE_PROXIMITY_UUID;
 	NSString* identifier = @"EstimoteSampleRegion";
@@ -218,6 +208,7 @@
 	BOOL majorIsDefined = NO;
 	BOOL minorIsDefined = NO;
 	BOOL secureIsDefined = NO;
+  CLBeaconRegion *beaconRegion = [CLBeaconRegion alloc];
 
 	// Get region values.
 	for (id key in regionDict) {
@@ -242,28 +233,29 @@
 
 	// Create a beacon region object.
 	if (majorIsDefined && minorIsDefined) {
-		return [[ESTBeaconRegion alloc]
-			initWithProximityUUID: uuid
+		beaconRegion = [beaconRegion
+      initWithProximityUUID: uuid
 			major: major
 			minor: minor
-			identifier: identifier
-			secured: secure]; }
-	else if (majorIsDefined) {
-		return [[ESTBeaconRegion alloc]
+			identifier: identifier];
+  } else if (majorIsDefined) {
+		beaconRegion = [beaconRegion
 			initWithProximityUUID: uuid
 			major: major
-			identifier:identifier
-			secured: secure];	}
-	else {
-		return [[ESTBeaconRegion alloc]
+			identifier:identifier];
+  } else {
+		beaconRegion = [beaconRegion
 			initWithProximityUUID: uuid
-			identifier: identifier
-			secured: secure]; } }
+			identifier: identifier];
+  }
+
+  return beaconRegion;
+}
 
 /**
  * Create a dictionary object from a region.
  */
-- (NSDictionary*) regionToDictionary:(ESTBeaconRegion*)region
+- (NSDictionary *)regionToDictionary:(CLBeaconRegion *)region
 {
 	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:4];
 
@@ -278,7 +270,7 @@
 /**
  * Create a dictionary key for a region.
  */
-- (NSString*) regionDictionaryKey:(ESTBeaconRegion*)region
+- (NSString*) regionDictionaryKey:(CLBeaconRegion*)region
 {
 	NSString* uuid = region.proximityUUID.UUIDString;
 	int major = nil != region.major ? [region.major intValue] : 0;
@@ -291,7 +283,7 @@
  * Create a dictionary from a beacon object (used to
  * pass beacon data back to JavaScript).
  */
-- (NSDictionary*) beaconToDictionary:(ESTBeacon*)beacon
+- (NSDictionary*) beaconToDictionary:(CLBeacon *)beacon
 {
 	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:32];
 
@@ -338,149 +330,23 @@
 /**
  * Create a dictionary object from a region.
  */
-- (NSDictionary*) dictionaryWithRegion:(ESTBeaconRegion*)region
+- (NSDictionary *)dictionaryWithRegion:(CLBeaconRegion*)region
 	andBeacons:(NSArray*)beacons
 {
 	// Convert beacons to a an array of property-value objects.
-	NSMutableArray* beaconArray = [NSMutableArray array];
-	for (ESTBeacon* beacon in beacons)
+	NSMutableArray *beaconArray = [NSMutableArray array];
+	for (CLBeacon *beacon in beacons)
 	{
 		[beaconArray addObject:[self beaconToDictionary:beacon]];
 	}
 
-	NSDictionary* regionDictionary = [self regionToDictionary:region];
+	NSDictionary *regionDictionary = [self regionToDictionary:region];
 
 	return @{
 		@"region" : regionDictionary,
 		@"beacons" : beaconArray
 		};
 }
-
-#pragma mark - CoreBluetooth discovery
-
-/**
- * Start CoreBluetooth discovery.
- */
-- (void) beacons_startEstimoteBeaconsDiscoveryForRegion:(CDVInvokedUrlCommand*)command
-{
-	//NSLog(@"OBJC startEstimoteBeaconsDiscoveryForRegion ");
-
-	// Get region dictionary passed from JavaScript and
-	// create a beacon region object.
-	NSDictionary* regionDictionary = [command argumentAtIndex:0];
-	ESTBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
-
-	// Stop any ongoing discovery.
-	[self helper_stopEstimoteBeaconDiscovery];
-
-	// Save callback id.
-	self.callbackId_beaconsDiscovery = command.callbackId;
-
-	// Start discovery.
-	[self.beaconManager startEstimoteBeaconsDiscoveryForRegion:region];
-}
-
-/**
- * Stop CoreBluetooth discovery.
- */
-- (void) beacons_stopEstimoteBeaconDiscovery:(CDVInvokedUrlCommand*)command
-{
-	// Stop discovery.
-	[self helper_stopEstimoteBeaconDiscovery];
-
-	// Respond to JavaScript with OK if a Cordova command object was passed.
-	if (nil != command)
-	{
-		[self.commandDelegate
-			sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK]
-			callbackId:command.callbackId];
-	}
-}
-
-- (void) helper_stopEstimoteBeaconDiscovery
-{
-	// Stop existing discovery/ranging.
-	[self.beaconManager stopEstimoteBeaconDiscovery];
-
-	// Clear any existing callback.
-	if (self.callbackId_beaconsDiscovery)
-	{
-		// Clear callback on the JS side.
-		CDVPluginResult* result = [CDVPluginResult
-			resultWithStatus:CDVCommandStatus_NO_RESULT];
-		[result setKeepCallbackAsBool:NO];
-		[self.commandDelegate
-			sendPluginResult:result
-			callbackId:self.callbackId_beaconsDiscovery];
-
-		// Clear callback id.
-		self.callbackId_beaconsDiscovery = nil;
-	}
-}
-
-/**
- * CoreBluetooth discovery event.
- */
-- (void) beaconManager:(ESTBeaconManager*)manager
-	didDiscoverBeacons:(NSArray*)beacons
-	inRegion:(ESTBeaconRegion*)region
-{
-	if ([beacons count] > 0
-		&& nil != self.callbackId_beaconsDiscovery)
-	{
-		// Create dictionary with result.
-		NSDictionary* resultDictionary = [self
-			dictionaryWithRegion:region
-			andBeacons:beacons];
-
-		// Pass result to JavaScript callback.
-		CDVPluginResult* result = [CDVPluginResult
-			resultWithStatus:CDVCommandStatus_OK
-			messageAsDictionary:resultDictionary];
-		[result setKeepCallbackAsBool: YES];
-		[self.commandDelegate
-			sendPluginResult:result
-			callbackId:self.callbackId_beaconsDiscovery];
-	}
-}
-
-/**
- * CoreBluetooth discovery error event.
- */
-- (void) beaconManager:(ESTBeaconManager*)manager
-	didFailDiscoveryInRegion:(ESTBeaconRegion*)region
-{
-	// Pass error to JavaScript.
-	if (self.callbackId_beaconsDiscovery != nil)
-	{
-		[self.commandDelegate
-			sendPluginResult:[CDVPluginResult
-				resultWithStatus:CDVCommandStatus_ERROR
-				messageAsString:@"didFailDiscoveryInRegion"]
-			callbackId:self.callbackId_beaconsDiscovery];
-	}
-}
-
-/*
-Above code is tested using these snippets in Evothings Studio:
-
-EstimoteBeacons.startEstimoteBeaconsDiscoveryForRegion(
-	{},
-	function(beacons){console.log('success ' + beacons[0].major + ' ' + beacons[0].minor)},
-	function(){console.log('error')}
-	)
-
-EstimoteBeacons.stopEstimoteBeaconDiscovery(
-	function(){console.log('success')},
-	function(){console.log('error')}
-	)
-
-Use JavaScript tools to evaluate in Evothings Workbench.
-Requires a Cordova app built with the plugin to test.
-Make the app connect to the Workbench by entering
-the Workbench ip-address/port as the Cordova main URL.
-Example: http://192.168.0.101:4042
-*/
 
 #pragma mark - CoreLocation ranging
 
@@ -494,7 +360,7 @@ Example: http://192.168.0.101:4042
 	// Get region dictionary passed from JavaScript and
 	// create a beacon region object.
 	NSDictionary* regionDictionary = [command argumentAtIndex:0];
-	ESTBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
+	CLBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
 
 	// Stop any ongoing ranging for the given region.
 	[self helper_stopRangingBeaconsInRegion:region];
@@ -516,7 +382,7 @@ Example: http://192.168.0.101:4042
 	// Get region dictionary passed from JavaScript and
 	// create a beacon region object.
 	NSDictionary* regionDictionary = [command argumentAtIndex:0];
-	ESTBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
+	CLBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
 
 	// Stop ranging.
 	[self helper_stopRangingBeaconsInRegion:region];
@@ -527,7 +393,7 @@ Example: http://192.168.0.101:4042
 		callbackId:command.callbackId];
 }
 
-- (void) helper_stopRangingBeaconsInRegion:(ESTBeaconRegion*)region
+- (void) helper_stopRangingBeaconsInRegion:(CLBeaconRegion*)region
 {
 	// Stop ranging the region.
 	[self.beaconManager stopRangingBeaconsInRegion:region];
@@ -556,7 +422,7 @@ Example: http://192.168.0.101:4042
  */
 - (void) beaconManager:(ESTBeaconManager*)manager
 	didRangeBeacons:(NSArray*)beacons
-	inRegion:(ESTBeaconRegion*)region
+	inRegion:(CLBeaconRegion*)region
 {
 	if ([beacons count] > 0)
 	{
@@ -585,7 +451,7 @@ Example: http://192.168.0.101:4042
  * CoreLocation ranging error event.
  */
 - (void) beaconManager:(ESTBeaconManager*)manager
-	rangingBeaconsDidFailForRegion:(ESTBeaconRegion*)region
+	rangingBeaconsDidFailForRegion:(CLBeaconRegion*)region
 	withError:(NSError*)error
 {
 	// Send error message before callback is cleared.
@@ -617,7 +483,7 @@ Example: http://192.168.0.101:4042
 	// Get region dictionary passed from JavaScript and
 	// create a beacon region object.
 	NSDictionary* regionDictionary = [command argumentAtIndex:0];
-	ESTBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
+	CLBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
 
 	// Set region notification when display is activated.
 	region.notifyEntryStateOnDisplay = (BOOL)[command argumentAtIndex:1];
@@ -645,7 +511,7 @@ Example: http://192.168.0.101:4042
 	// Get region dictionary passed from JavaScript and
 	// create a beacon region object.
 	NSDictionary* regionDictionary = [command argumentAtIndex:0];
-	ESTBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
+	CLBeaconRegion* region = [self createRegionFromDictionary:regionDictionary];
 
 	// Stop monitoring.
 	[self helper_stopMonitoringForRegion:region];
@@ -656,7 +522,7 @@ Example: http://192.168.0.101:4042
 		callbackId:command.callbackId];
 }
 
-- (void) helper_stopMonitoringForRegion:(ESTBeaconRegion*)region
+- (void) helper_stopMonitoringForRegion:(CLBeaconRegion*)region
 {
 	// Stop monitoring the region.
 	[self.beaconManager stopMonitoringForRegion:region];
@@ -681,19 +547,19 @@ Example: http://192.168.0.101:4042
 }
 
 - (void) beaconManager:(ESTBeaconManager *)manager
-	didStartMonitoringForRegion:(ESTBeaconRegion *)region
+	didStartMonitoringForRegion:(CLBeaconRegion *)region
 {
 	// Not used.
 }
 
 - (void) beaconManager:(ESTBeaconManager *)manager
-	didEnterRegion:(ESTBeaconRegion *)region
+	didEnterRegion:(CLBeaconRegion *)region
 {
 	// Not used.
 }
 
 - (void) beaconManager:(ESTBeaconManager *)manager
-	didExitRegion:(ESTBeaconRegion *)region
+	didExitRegion:(CLBeaconRegion *)region
 {
 	// Not used.
 }
@@ -703,7 +569,7 @@ Example: http://192.168.0.101:4042
  */
 - (void) beaconManager:(ESTBeaconManager *)manager
 	didDetermineState:(CLRegionState)state
-	forRegion:(ESTBeaconRegion *)region
+	forRegion:(CLBeaconRegion *)region
 {
 	//NSLog(@"OBJC didDetermineStateforRegion");
 
@@ -748,7 +614,7 @@ Example: http://192.168.0.101:4042
  * CoreLocation monitoring error event.
  */
 - (void) beaconManager:(ESTBeaconManager *)manager
-	monitoringDidFailForRegion:(ESTBeaconRegion *)region
+	monitoringDidFailForRegion:(CLBeaconRegion *)region
 	withError:(NSError *)error
 {
 	// Send error message before callback is cleared.
@@ -837,20 +703,42 @@ Example: http://192.168.0.101:4042
 
 #pragma mark - Config methods
 
-- (void) beacons_enableAnalytics: (CDVInvokedUrlCommand*)command
+- (void) beacons_enableMonitoringAnalytics: (CDVInvokedUrlCommand*)command
 {
 	BOOL enable = [[command argumentAtIndex: 0] boolValue];
 
-	[ESTConfig enableAnalytics: enable];
+	[ESTConfig enableMonitoringAnalytics: enable];
 
 	[self.commandDelegate
 		sendPluginResult: [CDVPluginResult resultWithStatus: CDVCommandStatus_OK]
 		callbackId: command.callbackId];
 }
 
-- (void) beacons_isAnalyticsEnabled: (CDVInvokedUrlCommand*)command
+- (void) beacons_enableRangingAnalytics: (CDVInvokedUrlCommand*)command
 {
-	BOOL isAnalyticsEnabled = [ESTConfig isAnalyticsEnabled];
+	BOOL enable = [[command argumentAtIndex: 0] boolValue];
+
+	[ESTConfig enableRangingAnalytics: enable];
+
+	[self.commandDelegate
+		sendPluginResult: [CDVPluginResult resultWithStatus: CDVCommandStatus_OK]
+		callbackId: command.callbackId];
+}
+
+- (void) beacons_isMonitoringAnalyticsEnabled: (CDVInvokedUrlCommand*)command
+{
+	BOOL isAnalyticsEnabled = [ESTConfig isMonitoringAnalyticsEnabled];
+
+	[self.commandDelegate
+		sendPluginResult: [CDVPluginResult
+			resultWithStatus: CDVCommandStatus_OK
+			messageAsBool: isAnalyticsEnabled]
+		callbackId: command.callbackId];
+}
+
+- (void) beacons_isRangingAnalyticsEnabled: (CDVInvokedUrlCommand*)command
+{
+	BOOL isAnalyticsEnabled = [ESTConfig isRangingAnalyticsEnabled];
 
 	[self.commandDelegate
 		sendPluginResult: [CDVPluginResult
@@ -982,8 +870,6 @@ Example: http://192.168.0.101:4042
 		forKey: @"nameForType"];
 	[dict setValue: [NSNumber numberWithInt: nearable.type]
 		forKey: @"color"];
-	[dict setValue: [ESTNearableDefinitions nameForColor: nearable.color]
-		forKey: @"nameForColor"];
 	[dict setValue: nearable.identifier
 		forKey: @"identifier"];
 	[dict setValue: nearable.hardwareVersion
