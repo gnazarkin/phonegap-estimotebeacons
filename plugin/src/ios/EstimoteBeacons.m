@@ -129,7 +129,20 @@
  */
 @property bool bluetoothState;
 
+/**
+ * Beacon Connection
+ */
+
+@property (nonatomic, strong) ESTBeaconConnection* beaconConnection;
+
+/**
+ * Beacon Connection Callback
+ */
+
+@property (nonatomic, strong) NSString* callbackIds_beaconConnection;
+
 @end
+
 
 #pragma mark - Estimote Beacons Implementation
 
@@ -138,6 +151,7 @@
 /*********************************************************/
 /****************** Initialise/Reset *********************/
 /*********************************************************/
+
 
 #pragma mark - Initialization
 
@@ -161,6 +175,17 @@
 	[self nearables_onReset];
 	[self triggers_onReset];
 	[self bluetooth_onReset];
+}
+
+- (NSDictionary *) dictionaryWithConnection:(ESTBeaconConnection *)connection
+{
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    if (connection.identifier) dict[@"identifier"] = connection.identifier;
+    if (connection.identifier) dict[@"macAddress"] = connection.macAddress;
+    if (connection.identifier) dict[@"proximityUUID"] = connection.proximityUUID.UUIDString;
+    if (connection.identifier) dict[@"major"] = connection.major;
+    if (connection.identifier) dict[@"minor"] = connection.minor;
+    return dict;
 }
 
 /*********************************************************/
@@ -364,6 +389,146 @@
 		sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK]
 		callbackId:command.callbackId];
 }
+
+- (void) beacons_connectToBeacon: (CDVInvokedUrlCommand*)command
+{
+    NSDictionary *beacon = [command argumentAtIndex: 0];
+    NSString* uuidString = beacon[@"uuid"];
+    NSInteger major = [beacon[@"major"] integerValue];
+    NSInteger minor = [beacon[@"minor"] integerValue];
+
+    NSString *cid = [NSString stringWithFormat:@"%@:%lu:%lu", uuidString, major, minor];
+
+    if (!self.beaconConnection) {
+        NSLog(@"%s Connecting to beacon %@", __PRETTY_FUNCTION__, cid);
+        NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:uuidString];
+        ESTBeaconConnection *connection = [ESTBeaconConnection connectionWithProximityUUID:uuid major:major minor:minor delegate:self];
+        self.beaconConnection = connection;
+        self.callbackIds_beaconConnection = command.callbackId;
+        [connection startConnection];
+    }
+    else {
+        //ESTBeaconConnection *connection = self.beaconConnection;
+        //if (connection.connectionStatus !== ESTConnectionStatusConnecting)
+        //NSLog(@"%s Connection to %@ already in the connection pool", __PRETTY_FUNCTION__, cid);
+    }
+    NSLog(@"connection status: %d", self.beaconConnection.connectionStatus);
+}
+
+- (void)beaconConnectionDidSucceed:(ESTBeaconConnection *)connection
+{
+    NSLog(@"%s %@", __PRETTY_FUNCTION__, connection.identifier);
+    NSString *callbackId = self.callbackIds_beaconConnection;
+    CDVPluginResult *result;
+    if (callbackId) {
+        NSDictionary *message = [self dictionaryWithConnection:connection];
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:message];
+        [result setKeepCallbackAsBool:YES];
+    }
+    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+}
+
+- (void)beaconConnection:(ESTBeaconConnection *)connection didFailWithError:(NSError *)error
+{
+    NSLog(@"%s %@ %@", __PRETTY_FUNCTION__, connection.identifier, error.localizedDescription);
+    NSString *callbackId = self.callbackIds_beaconConnection;
+
+    NSDictionary *message = @{@"connection":[self dictionaryWithConnection:connection],
+                              @"code":@(error.code),
+                              @"type":@"failed",
+                              @"error":error.localizedDescription};
+    CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:message];
+
+    connection.delegate = nil;
+    self.beaconConnection = nil;
+    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+}
+
+- (void) beacons_writeConnectedMajor:(CDVInvokedUrlCommand*)command
+{
+//    NSLog(@"connection status: %d", self.beaconConnection.connectionStatus);
+    NSInteger major = [[command argumentAtIndex: 0] integerValue];
+    if(!self.beaconConnection) {
+      NSLog(@"error connecting");
+    }
+    ESTBeaconConnection *connection = self.beaconConnection;
+    [connection writeMajor:major completion:^(unsigned short value, NSError * _Nullable error) {
+      NSString *callbackId = command.callbackId;
+      CDVPluginResult *result;
+      if(error) {
+          NSLog(@"error writing major: %@", [error localizedDescription]);
+          NSDictionary *message = @{@"code":@(error.code),
+                                    @"type":@"failed",
+                                    @"error":error.localizedDescription};
+          result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:message];
+          [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+      } else {
+          NSLog(@"beacon major value changed");
+          if (callbackId) {
+              NSDictionary *message = @{@"result":@"success"};
+              result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:message];
+              [result setKeepCallbackAsBool:YES];
+          }
+      }
+      [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    }];
+}
+
+- (void) beacons_writeConnectedMinor:(CDVInvokedUrlCommand*)command
+{
+    NSInteger minor = [[command argumentAtIndex: 0] integerValue];
+    NSLog(@"minor value:%ld", (long)minor);
+    if(!self.beaconConnection) {
+        NSLog(@"error connecting");
+    }
+    ESTBeaconConnection *connection = self.beaconConnection;
+    [connection writeMinor:minor completion:^(unsigned short value, NSError * _Nullable error) {
+        NSString *callbackId = command.callbackId;
+        CDVPluginResult *result;
+        if(error) {
+            NSLog(@"error writing minor: %@", [error localizedDescription]);
+            NSDictionary *message = @{@"code":@(error.code),
+                                      @"type":@"failed",
+                                      @"error":error.localizedDescription};
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:message];
+            [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+        } else {
+            NSLog(@"beacon minor value changed");
+            if (callbackId) {
+                NSDictionary *message = @{@"result":@"success"};
+                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:message];
+                [result setKeepCallbackAsBool:YES];
+            }
+        }
+        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    }];
+}
+
+- (void) beacons_writeConnectedProximityUUID:(CDVInvokedUrlCommand*)command
+{
+    NSLog(@"writeConnectedBeaconUUID called");
+}
+
+- (void) beacons_disconnectConnectedBeacon:(CDVInvokedUrlCommand*)command
+{
+    NSLog(@"disconnectConnectedBeacon called");
+}
+
+- (void)beaconConnection:(ESTBeaconConnection *)connection didDisconnectWithError:(NSError * _Nullable)error
+{
+    NSLog(@"%s %@ %@", __PRETTY_FUNCTION__, connection.identifier, error);
+    NSString *callbackId = self.callbackIds_beaconConnection;
+    NSDictionary *message = @{@"connection":[self dictionaryWithConnection:connection],
+                              @"code":@(error.code),
+                              @"type":@"disconnected",
+                              @"error":error.localizedDescription};
+    CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:message];
+
+    connection.delegate = nil;
+    self.beaconConnection = nil;
+    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+}
+
 
 - (void) helper_stopRangingBeaconsInRegion:(CLBeaconRegion*)region
 {
