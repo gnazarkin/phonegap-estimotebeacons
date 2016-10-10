@@ -12,6 +12,9 @@
 #import <Foundation/Foundation.h>
 #import "ESTEddystone.h"
 #import "ESTEddystoneUID.h"
+#import "ESTEddystoneURL.h"
+#import "ESTEddystoneTLM.h"
+#import "ESTEddystoneEID.h"
 #import "ESTEddystoneFilter.h"
 
 NS_ASSUME_NONNULL_BEGIN

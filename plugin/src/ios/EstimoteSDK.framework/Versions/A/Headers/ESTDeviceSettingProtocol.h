@@ -12,6 +12,8 @@
 #import <Foundation/Foundation.h>
 #import "ESTSettingProtocol.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 
 @protocol ESTDeviceSettingProtocol <ESTSettingProtocol>
 
@@ -25,12 +27,13 @@
 - (uint16_t)registerID;
 
 /**
- *  Method returns value converted to NSDate object that can be used
- *  to save value to the device.
+ *  Method returns value converted to NSData object that can be used
+ *  to save value to the device. For read-only settings (temperature)
+ *  this method can return nil.
  *
- *  @return NSDate representing setting value
+ *  @return NSData representing setting value
  */
-- (NSData *)getValueData;
+- (NSData * _Nullable)getValueData;
 
 /**
  *  Method updates setting value based on NSData object delivered from the device.
@@ -60,4 +63,14 @@
 */
 - (NSError *)validateValue;
 
+/**
+ *  Decorator method that should update particular field in settings object
+ *  with proper value it is carrying.
+ *
+ *  @param settings Settings object that should be decorated
+ */
+- (void)updateValueInSettings:(id)settings;
+
 @end
+
+NS_ASSUME_NONNULL_END

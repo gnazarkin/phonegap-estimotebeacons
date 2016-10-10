@@ -91,6 +91,12 @@ enum
  */
 - (void)beaconConnection:(ESTBeaconConnection *)connection motionStateChanged:(ESTBeaconMotionState)state;
 
+/**
+ * Tells the delegate that a beacon's RSSI value was updated.
+ *
+ * @param connection The beacon connection object reporting the event.
+ * @param rssi The new rssi value.
+ */
 - (void)beaconConnection:(ESTBeaconConnection *)connection didUpdateRSSI:(NSNumber *)rssi;
 
 @end
@@ -115,7 +121,7 @@ enum
 @property (nonatomic, weak) id<ESTBeaconConnectionDelegate> _Nullable delegate;
 
 /**
- * Identifier of the device that you aim to connect. 
+ * Identifier of the device that you aim to connect.
  * Based on the method you used to initialize it may contain:
  * - Device Mac address
  * - Device iBeacon properties formatted as follows: ProximityUUUID:Major:Minor
@@ -142,7 +148,7 @@ enum
 + (instancetype)connectionWithProximityUUID:(NSUUID *)proximityUUID
                                       major:(CLBeaconMajorValue)major
                                       minor:(CLBeaconMinorValue)minor
-                              delegate:(id<ESTBeaconConnectionDelegate> _Nullable)delegate;
+                                   delegate:(id<ESTBeaconConnectionDelegate> _Nullable)delegate;
 
 /**
  *  Static method initializing connection object with Estimote beacon
@@ -859,6 +865,37 @@ enum
 - (void)writeCalibratedTemperature:(NSNumber *)temperature
                         completion:(ESTNumberCompletionBlock)completion;
 
+#pragma mark - Writing methods for GPS location
+///--------------------------------------------------------------------
+/// @name Writing methods for GPS location
+///--------------------------------------------------------------------
+
+/**
+  * Saves GPS latitude and longitude in Estimote Cloud.
+  * After successful save lat and log is set in beacon connection object.
+  *
+  *  @param latitude   GPS latitude
+  *  @param longitude  GPS longitude
+  *  @param completion completion block fired on operation completion
+  */
+- (void)writeLatitude:(NSNumber *)latitude
+            longitude:(NSNumber *)longitude
+           completion:(ESTCompletionBlock)completion;
+
+#pragma mark - Writing methods for Cloud Tags setting of a device
+///--------------------------------------------------------------------
+/// @name Writing methods for Cloud Tags setting of a device
+///--------------------------------------------------------------------
+
+/**
+  * Saves Cloud Tags setting for the device in Estimote Cloud.
+  *
+  *  @param tags       Cloud Tags
+  *  @param completion completion block fired on operation completion
+  */
+-  (void)writeTags:(NSSet <NSString *> *)tags
+        completion:(ESTCompletionBlock)completion;
+
 #pragma mark - Reset to factory settings
 ///--------------------------------------------------------------------
 /// @name Reset to factory settings
@@ -943,6 +980,11 @@ enum
  */
 - (void)updateFirmwareWithProgress:(ESTProgressBlock)progress
                         completion:(ESTCompletionBlock)completion;
+
+/**
+ * Returns value object for current `ESTBeaconConnection` object.
+ */
+- (ESTBeaconVO *)valueObject;
 
 @end
 

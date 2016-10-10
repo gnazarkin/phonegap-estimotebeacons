@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ESTConfig : NSObject
 
-#pragma mark - Configuration
+#pragma mark - Estimote API Credentials
 
 /**
  * Sets App ID and App Token, enabling communication with the Estimote Cloud API.
@@ -52,13 +52,34 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)isAuthorized;
 
+#pragma mark - Google API Credentials
+
+/**
+ * Sets Google API Key, enabling communication with Google API.
+ *
+ * You can get it from Google Developer Console ( https://console.developers.google.com ) using project credentials settings.
+ * Google API Key is required to properly resolve Eddystone-EID packet.
+ *
+ * @param googleAPIKey Google API Key.
+ */
++ (void)setupGoogleAPIKey:(NSString *)googleAPIKey;
+
+/**
+ * Returns currently used Google API Key.
+ *
+ * @return currently used Google API Key.
+ */
++ (NSString * _Nullable)googleAPIKey;
+
+#pragma mark - Analytics settings
+
 /**
  *  Enables analytics requests on Enter/Exit monitoring events. Analytics data
  *  is collected in the Estimote Cloud.
  *
  *  @param enable flag indicating if analytics for monitoring should be enabled
  */
-+ (void)enableMonitoringAnalytics:(BOOL)enable;
++ (void)enableMonitoringAnalytics:(BOOL)enable DEPRECATED_MSG_ATTRIBUTE("Starting from SDK 4.1.1 this method is deprecated. Please use [ESTAnalyticsManager enableMonitoringAnalytics:]");
 
 /**
  *  Enables analytics requests for ranging events.
@@ -67,7 +88,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  @param enable flag indicating if analytics for ranging should be enabled
  */
-+ (void)enableRangingAnalytics:(BOOL)enable;
++ (void)enableRangingAnalytics:(BOOL)enable DEPRECATED_MSG_ATTRIBUTE("Starting from SDK 4.1.1 this method is deprecated. Please use [ESTAnalyticsManager enableRangingAnalytics:]");
 
 /**
  *  When GPS Positioning is turned on analytics events
@@ -75,21 +96,21 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  @param enable flag indicating if GPS Positioning should be enabled
  */
-+ (void)enableGPSPositioningForAnalytics:(BOOL)enable;
++ (void)enableGPSPositioningForAnalytics:(BOOL)enable DEPRECATED_MSG_ATTRIBUTE("Starting from SDK 4.1.1 this method is deprecated. Please use [ESTAnalyticsManager enableGPSPositioningForAnalytics:]");
 
 /**
  *  Indicates current state of monitoring analytics.
  *
  *  @return flag that indicates if analytics is enabled
  */
-+ (BOOL)isMonitoringAnalyticsEnabled;
++ (BOOL)isMonitoringAnalyticsEnabled DEPRECATED_MSG_ATTRIBUTE("Starting from SDK 4.1.1 this method is deprecated. Please use [ESTAnalyticsManager isMonitoringAnalyticsEnabled:]");
 
 /**
  *  Indicates current state of ranging analytics.
  *
  *  @return flag that indicates if analytics is enabled
  */
-+ (BOOL)isRangingAnalyticsEnabled;
++ (BOOL)isRangingAnalyticsEnabled DEPRECATED_MSG_ATTRIBUTE("Starting from SDK 4.1.1 this method is deprecated. Please use [ESTAnalyticsManager isRangingAnalyticsEnabled:]");
 
 @end
 

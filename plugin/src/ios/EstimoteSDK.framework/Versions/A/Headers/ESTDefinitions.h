@@ -25,6 +25,7 @@ typedef NS_ENUM(int, ESTColor)
     ESTColorVanillaJello,
     ESTColorLiquoriceSwirl,
     ESTColorWhite,
+    ESTColorBlack,
     ESTColorTransparent
 };
 
@@ -56,9 +57,6 @@ typedef void(^ESTProgressBlock)(NSInteger value, NSString * _Nullable descriptio
 typedef void(^ESTArrayCompletionBlock)(NSArray * _Nullable value, NSError * _Nullable error);
 typedef void(^ESTDictionaryCompletionBlock)(NSDictionary * _Nullable value, NSError * _Nullable error);
 typedef void(^ESTCsRegisterCompletonBlock)(NSError * _Nullable error);
-
-typedef void(^ESTSettingAdvertisingIntervalCompletionBlock)(NSNumber * _Nullable advertisingInterval, NSError * _Nullable error);
-typedef void(^ESTSettingBroadcastingPowerCompletionBlock)(NSNumber * _Nullable broadcastingPower, NSError * _Nullable error);
 
 @interface ESTDefinitions : NSObject
 

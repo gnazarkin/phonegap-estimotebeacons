@@ -24,34 +24,45 @@ typedef NS_OPTIONS(NSUInteger, ESTBeaconDetailsFields)
     ESTBeaconDetailsFieldGPSLocation                 = 1 << 4,
     ESTBeaconDetailsFieldIndoorLocation              = 1 << 5,
     ESTBeaconDetailsFieldPublicIdentifier            = 1 << 6,
+    ESTBeaconDetailsFieldRemainingBatteryLifetime    = 1 << 7,
     
-    ESTBeaconDetailsAllSettings                      = 1 << 7,
-    ESTBeaconDetailsFieldBattery                     = 1 << 8,
-    ESTBeaconDetailsFieldPower                       = 1 << 9,
-    ESTBeaconDetailsFieldInterval                    = 1 << 10,
-    ESTBeaconDetailsFieldHardware                    = 1 << 11,
-    ESTBeaconDetailsFieldFirmware                    = 1 << 12,
-    ESTBeaconDetailsFieldBasicPowerMode              = 1 << 13,
-    ESTBeaconDetailsFieldSmartPowerMode              = 1 << 14,
-    ESTBeaconDetailsFieldTimeZone                    = 1 << 15,
-    ESTBeaconDetailsFieldSecurity                    = 1 << 16,
-    ESTBeaconDetailsFieldMotionDetection             = 1 << 17,
-    ESTBeaconDetailsFieldConditionalBroadcasting     = 1 << 18,
-    ESTBeaconDetailsFieldBroadcastingScheme          = 1 << 19,
-    ESTBeaconDetailsFieldUUIDMajorMinor              = 1 << 20,
-    ESTBeaconDetailsFieldEddystoneNamespaceID        = 1 << 21,
-    ESTBeaconDetailsFieldEddystoneInstanceID         = 1 << 22
+    ESTBeaconDetailsAllSettings                      = 1 << 8,
+    ESTBeaconDetailsFieldBattery                     = 1 << 9,
+    ESTBeaconDetailsFieldPower                       = 1 << 10,
+    ESTBeaconDetailsFieldInterval                    = 1 << 11,
+    ESTBeaconDetailsFieldHardware                    = 1 << 12,
+    ESTBeaconDetailsFieldFirmware                    = 1 << 13,
+    ESTBeaconDetailsFieldBasicPowerMode              = 1 << 14,
+    ESTBeaconDetailsFieldSmartPowerMode              = 1 << 15,
+    ESTBeaconDetailsFieldTimeZone                    = 1 << 16,
+    ESTBeaconDetailsFieldSecurity                    = 1 << 17,
+    ESTBeaconDetailsFieldMotionDetection             = 1 << 18,
+    ESTBeaconDetailsFieldConditionalBroadcasting     = 1 << 19,
+    ESTBeaconDetailsFieldBroadcastingScheme          = 1 << 20,
+    ESTBeaconDetailsFieldUUIDMajorMinor              = 1 << 21,
+    ESTBeaconDetailsFieldEddystoneNamespaceID        = 1 << 22,
+    ESTBeaconDetailsFieldEddystoneInstanceID         = 1 << 23
 };
 
 typedef void(^ESTRequestGetBeaconsDetailsBlock)(NSArray * _Nullable beaconVOArray, NSError * _Nullable error);
 
 
+/**
+ *  Request allows to fetch information about group of beacons
+ *  with identifiers provided during initialization.
+ */
 @interface ESTRequestGetBeaconsDetails : ESTRequestGetJSON
 
-/** Array of identifiers of beacons which details should be fetched. 
- * Can be MAC addresses or Eddystone Identifiers or proximityUUID:major:minor strings
+/** 
+ *  Array of identifiers of beacons which details should be fetched.
+ *  Can be MAC addresses or Eddystone Identifiers or proximityUUID:major:minor strings
  */
 @property (nonatomic, strong, readonly) NSArray<NSString *> *beaconIdentifiers;
+
+/**
+ *  Possible beacon parameters that can be fetched from the Estimote Cloud.
+ *  Provided as NS_OPTIONS ESTBeaconDetailsFields.
+ */
 @property (nonatomic, assign, readonly) ESTBeaconDetailsFields fields;
 
 /**

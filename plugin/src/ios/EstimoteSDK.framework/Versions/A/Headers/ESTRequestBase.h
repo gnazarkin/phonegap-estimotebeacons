@@ -14,9 +14,39 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define ESTRequestBaseErrorDomain @"ESTRequestBaseErrorDomain"
 
+/**
+ *  Describes possible errors that can occur during sending request.
+ */
 typedef NS_ENUM(NSInteger, ESTRequestBaseError)
 {
-    ESTRequestBaseErrorConnectionFail
+    /**
+     * Error was encountered during the connection attempt.
+     */
+    ESTRequestBaseErrorConnectionFail = -1,
+    /**
+     * No data was returned as a response or it couldn't be parsed as JSON.
+     */
+    ESTRequestBaseErrorNoData = -2,
+    /**
+     * The server cannot or will not process the request due to an apparent client error.
+     */
+    ESTRequestBaseErrorBadRequest = 400,
+    /**
+     * The server is refusing to respond to the request, authorization is required for the resource.
+     */
+    ESTRequestBaseErrorUnauthorized = 401,
+    /**
+     * The server is refusing to respond to the request, the user does not have the necessary permissions for the resource.
+     */
+    ESTRequestBaseErrorForbidden = 403,
+    /**
+     * The requested resource could not be found.
+     */
+    ESTRequestBaseErrorNotFound = 404,
+    /**
+     * Estimote Cloud failed to properly handle the request.
+     */
+    ESTRequestBaseErrorInternalServerError = 500,
 };
 
 typedef void(^ESTRequestBlock)(id _Nullable result, NSError * _Nullable error);
@@ -27,7 +57,7 @@ typedef void(^ESTRequestBlock)(id _Nullable result, NSError * _Nullable error);
 
 @protocol ESTRequestBaseDelegate <NSObject>
 
-- (void)request:(ESTRequestBase *)request didFinishLoadingWithResposne:(id)response;
+- (void)request:(ESTRequestBase *)request didFinishLoadingWithResposne:(nullable id)response;
 
 - (void)request:(ESTRequestBase *)request didFailLoadingWithError:(NSError *)error;
 
@@ -45,8 +75,10 @@ typedef void(^ESTRequestBlock)(id _Nullable result, NSError * _Nullable error);
 - (NSMutableURLRequest *)createRequestWithUrl:(NSString *)url;
 
 - (void)fireRequest:(NSMutableURLRequest *)request;
-- (void)parseRespondedData:(id)data;
+- (void)parseRespondedData:(nullable id)data;
 - (void)parseError:(NSError *)error;
+- (void)parseErrorWithCode:(ESTRequestBaseError)errorCode
+                    reason:(nullable NSString *)reason;
 
 - (void)sendRequest;
 - (void)sendRequestWithCompletion:(ESTRequestBlock)completion;
